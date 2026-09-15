@@ -1,0 +1,44 @@
+# JIRA CSV Import Mapping (generic / standard JIRA Software)
+
+This is a **generic template**, not confirmed against any specific JIRA project. Before a real import:
+confirm exact custom field names/IDs (Story Points and Acceptance Criteria in particular vary by
+instance), confirm allowed Priority values match the project's scheme, and run a small test import
+(3–5 rows) before bulk-loading the full backlog.
+
+## Row structure
+
+One row per **Story**. Epics are imported first as their own rows (Issue Type = Epic) so their
+generated JIRA keys exist before Story rows reference them via Epic Link — either via two passes
+(import epics, get keys back, then fill Epic Link on story rows) or by using JIRA's CSV importer
+"Epic Name" self-reference feature if your instance supports it.
+
+| Backlog field (from Stories tab) | JIRA CSV column | Notes |
+|---|---|---|
+| — (one row per epic, separate mini-import) | Issue Type = `Epic`, Summary, Epic Name | Import epics first |
+| Story ID | *(not imported — internal tracking only)* | Keep in workbook for traceability, drop from CSV or put in a custom "External ID" field if your project has one |
+| Title | Summary | |
+| Issue Type | Issue Type | Map `Story`→`Story`, `Enabler`→`Story` + label `enabler` (unless your project has a real Enabler issue type), `Spike`→`Spike` if available else `Story` + label `spike` |
+| Epic | Epic Link | Must be the target epic's real JIRA key, filled after epic import pass |
+| Feature | Labels **and/or** Components | Per intake decision in SKILL.md §1.4: standard JIRA Software has no native Feature issue type, so this rides as `feature:<name>` label (safest — doesn't require Components to be pre-provisioned) |
+| Summary (the As-a/I-want/so-that sentence) | Description (top section) | |
+| Description | Description (body) | |
+| Acceptance Criteria | Description (dedicated "Acceptance Criteria" heading) unless the project has a real custom AC field (e.g., Xray "Acceptance Criteria", Zephyr) — ask the user | |
+| Dependencies | Linked Issues (`blocked by` / `blocks`) | Standard CSV importer supports this via paired columns like `Outward Issue Link` + `Linked Issue`; requires target keys to already exist, so do dependency linking in a second pass after all stories are created |
+| Priority | Priority | Confirm the project's actual Priority scheme (Highest/High/Medium/Low/Lowest is default JIRA; MoSCoW or P1–P4 need a custom field or label instead) |
+| Story Size | Story point estimate (or the project's actual custom field name for points — commonly `customfield_10016` in Jira Cloud, but this varies per instance) | |
+| Complexity | Labels (`complexity:high`, etc.) unless a custom field exists | |
+| Design Details | Description (dedicated "Design Details" heading) or a custom field if the project has one | |
+| Actor/Persona | *(fold into Description, not usually its own field)* | |
+| Source Reference | Description (dedicated "Source" heading) — keep for traceability even post-import | |
+| Assumptions | Description (dedicated "Assumptions" heading) | |
+| Out of Scope | Description (dedicated "Out of Scope" heading) | |
+| Status | *(don't map — let JIRA's own workflow default status apply; don't force an import status)* | |
+
+## Open items to confirm with the user before real import
+
+- Actual custom field ID for Story Points
+- Whether Acceptance Criteria has a dedicated field (Xray/Zephyr) or belongs in Description
+- Actual allowed Priority values
+- Whether Feature should be a Label, a Component, or (if Advanced Roadmaps/Align is available) a real
+  Feature issue type
+- Default Reporter/Assignee handling for bulk import (usually left blank or set to importing user)
