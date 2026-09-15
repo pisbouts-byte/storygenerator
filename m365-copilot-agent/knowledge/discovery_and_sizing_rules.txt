@@ -1,0 +1,129 @@
+Discovery and Sizing Rules
+
+Consult this before drafting any story. It exists because this backlog-generation process was
+benchmarked once against manually-elaborated requirements and found to under-size large
+capabilities, template its acceptance criteria, under-model integrations, and drop cross-cutting
+case controls. These rules close those gaps.
+
+== Case-Type Matrix ==
+
+Enumerate every case type implied by the source artifacts, including specialized/child case types
+and secondary request types (e.g., an "assistance request" or "exception request" raised against a
+parent case) — these are exactly the kind of thing that gets missed when stories are drafted
+directly from a narrative transcript. Columns: Case Type, Parent Case Type (blank if top-level),
+Trigger/Entry Point, Primary Actor, Key Stages, Special Handling Notes. Every story in the backlog
+should trace to a row in this matrix — if a story doesn't, that's a sign either the matrix is
+incomplete or the story is scope creep.
+
+For every case type in the matrix, explicitly evaluate against this cross-cutting case-control
+checklist rather than only modeling the happy-path flow. Confirm with the user or infer from source
+which controls apply, and generate case-control stories accordingly — don't assume a control is
+"implied" by the case type and skip writing a story for it:
+
+- Withdraw — actor cancels/withdraws the case
+- Hold — case is paused pending an external condition, with a defined resume trigger
+- Resume — case returns to active processing from Hold
+- Skip — actor bypasses a stage/step under defined conditions
+- Return / Go-back — case is sent back to a prior stage/actor (rework, additional info needed)
+- Reassign — case ownership moves to a different actor/queue
+- Merge — two or more cases are combined
+- Duplicate detection — system identifies/handles a likely-duplicate case
+- Dependency / relationship gating — a case cannot proceed until a related case reaches a defined
+  state
+- Exception processing — generalized error/exception handling not specific to one business rule
+  (timeout, external-system failure, data-quality failure, manual-intervention routing)
+
+Not every control applies to every case type — but the matrix forces an explicit yes/no per case
+type instead of a silent default to "no." Record the "not applicable" ones as a one-line note on the
+matrix row, not just an absence.
+
+== Interface Inventory ==
+
+Enumerate every system-to-system interface implied by the source artifacts before drafting any
+integration story. Columns: Interface ID, Source System, Target System, Direction
+(inbound/outbound/bidirectional), Protocol (REST, SOAP, file, MQ, database, etc.),
+Interchange/Message Count (how many distinct message types or call patterns — not "1" by default),
+Data Objects Exchanged, Error Handling Approach, System of Record. Every integration-related story
+must reference an Interface Inventory row by Interface ID in its Description.
+
+Do not size an integration as a routine story by default. Sizing must account for: number of data
+objects and their complexity, synchronous vs. asynchronous, depth of error/retry/reconciliation
+handling required, and whether this is a new connector/pattern or reuse of an existing one. A
+same-system reuse of an already-built pattern can legitimately be small; a new external integration
+with multiple data objects and custom error handling rarely is.
+
+== A capability is not automatically one story ==
+
+If a capability from the source artifacts (e.g., "draft submissions and proposals") clearly
+represents a major, multi-part product capability rather than a single unit of work, model it as its
+own Feature decomposed into multiple stories from the start — don't draft one inflated story and
+rely on the size-gate below to catch it later. Ask "does this look like a whole feature, not a
+story?" before drafting, not just as a post-hoc split trigger.
+
+== Variant dimensions ==
+
+Before drafting stories within a feature, enumerate whether the capability varies by:
+standard/regulatory type, product/segment, actor role, review/approval path, or integration
+availability (e.g., behavior differs when an external system is unavailable). If a meaningful
+variant exists along any of these dimensions, generate a distinct story (or an explicitly named
+story variant) per combination rather than one generic story that hides the variation — a generic
+story here is exactly what produces templated, uninformative acceptance criteria.
+
+== Acceptance criteria anti-templating rule ==
+
+Do not reuse near-identical "created or updated / validated / audited" boilerplate across stories
+unless the underlying behavior is genuinely identical. Generic AC is a symptom of a generic story —
+if every story's AC reads the same, check whether the Sizing Drivers field is actually populated
+with real, story-specific facts. AC should make the specific rule, screen, variant, or exception
+path that this story covers legible to a reviewer who has never seen the source artifact.
+
+== Sizing Drivers field ==
+
+Every story needs a Sizing Drivers field: the concrete facts that produced this story's size — count
+of screens/views, business rules/decision variants, data elements/fields, integration touchpoints,
+and exception/alternate paths in scope. This is what makes a size defensible in grooming instead of
+a guess.
+
+== Sizing and the hard split gate ==
+
+Fibonacci sizing (1, 2, 3, 5, 8, 13) is relative effort, not days: 1-2 is a well-understood,
+single-component change; 3-5 touches multiple components or has some unknowns; 8 has real unknowns
+or multi-system coordination; 13 is the largest size a real story should carry.
+
+13 is a hard split-gate, not a soft signal. Any candidate story that would size at 13 must be
+re-evaluated against story-splitting patterns (workflow-step, business-rule/variation,
+CRUD-operation, interface/channel, happy-path-vs-exception) before it is finalized. If a capability
+keeps coming out at 13+ no matter how it's split, that's usually a sign it was never story-sized to
+begin with — treat it as a Feature instead.
+
+21 is not a normal story size. Reserve it only for a Spike (time-boxed research) where the work is
+explicitly not yet estimable as delivery work. A Story or Enabler sized at 21 should always be
+split instead.
+
+Complexity (Low/Medium/High/Complex) is orthogonal to size — it should reflect technical risk
+(fragile integration, unclear requirements, new-to-team tech, regulatory sensitivity), not just
+effort.
+
+== Calibrating against historical actuals ==
+
+If the team has historical implementation hours/points for comparable stories on this platform, use
+them as a sanity check on generated sizes: match each story's Sizing Drivers against the closest
+historical archetype and compare its actual hours, instead of applying one flat, generic
+points-to-hours conversion factor across every story regardless of what it actually involves. If no
+historical data exists, size from first principles and say so plainly rather than inventing
+calibration data.
+
+== Requirement Origin field ==
+
+Every story needs a Requirement Origin field: "Sourced" (directly traceable to a specific location
+in a provided artifact) or "Inferred" (filled in by AI judgment because the source didn't specify
+it). If Inferred, state what was inferred and why in the Source Reference field instead of leaving
+it blank. Inferred items should also appear in Open Questions, not just be implied by a vague
+Source Reference.
+
+== Category field ==
+
+Every story also needs a Category field distinct from Issue Type: "Functional" (delivers a business
+capability) or "Foundation/Overhead" (environments, DevOps, testing infrastructure, hardening,
+contingency/buffer). This keeps functional-value points and delivery-overhead points separable in
+rollups instead of conflated into one total.

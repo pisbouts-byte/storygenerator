@@ -34,7 +34,12 @@ line) into the agent's **Instructions** field.
 
 ## 3. Knowledge sources
 
-Upload these three files from the `knowledge/` folder in this same directory as knowledge sources:
+Upload these four files from the `knowledge/` folder in this same directory as knowledge sources:
+- `discovery_and_sizing_rules.txt` (the Case-Type Matrix, Interface Inventory, case-control
+  checklist, anti-templating rule, and hard split-gate sizing rules — added after a benchmark
+  against manually-elaborated requirements found the generated backlog was under-sizing large
+  capabilities and dropping cross-cutting case controls; see the agent's Instructions field for how
+  it's referenced)
 - `jira_csv_mapping.txt`
 - `platform_patterns_pega.txt`
 - `backlog_template.xlsx` (lets the agent describe the expected output format/columns, even though
@@ -45,7 +50,7 @@ sources don't accept raw Markdown. `.txt` keeps the same content and indexes fin
 Markdown syntax (headers, tables) still visible in the text.
 
 If your tenant only allows SharePoint/OneDrive knowledge sources rather than direct file upload,
-put these three files in a shared SharePoint folder first and point the agent at that folder
+put these four files in a shared SharePoint folder first and point the agent at that folder
 instead.
 
 ## 4. Conversation starters
@@ -58,9 +63,13 @@ In the builder's test pane, try:
 > "Build an agile backlog from this transcript. Platform is Pega Constellation/Infinity 24.1,
 > on-prem. This is a new build." (attach or paste a short sample transcript)
 
-Confirm it: asks for the platform/new-build/enhancement details if you didn't supply them, groups
-output into epics → features → stories, keeps acceptance criteria to 1–6 per story, uses Fibonacci
-sizing, and doesn't offer a JIRA export before you've said you approved the draft.
+Confirm it: asks for the platform/new-build/enhancement details if you didn't supply them, produces
+a Case-Type Matrix and Interface Inventory before any stories, evaluates case types against the
+case-control checklist (Withdraw/Hold/Resume/Skip/etc.) rather than only the happy path, groups
+output into epics → features → stories, keeps acceptance criteria to 1–6 per story and specific
+rather than templated boilerplate, populates Sizing Drivers with real counts, uses Fibonacci sizing
+with 13 treated as a split-gate (not 21), and doesn't offer a JIRA export before you've said you
+approved the draft.
 
 ## 6. Publish and share
 

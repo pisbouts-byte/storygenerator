@@ -19,16 +19,19 @@ generated JIRA keys exist before Story rows reference them via Epic Link — eit
 | Title | Summary | |
 | Issue Type | Issue Type | Map `Story`→`Story`, `Enabler`→`Story` + label `enabler` (unless your project has a real Enabler issue type), `Spike`→`Spike` if available else `Story` + label `spike` |
 | Epic | Epic Link | Must be the target epic's real JIRA key, filled after epic import pass |
-| Feature | Labels **and/or** Components | Per intake decision in SKILL.md §1.4: standard JIRA Software has no native Feature issue type, so this rides as `feature:<name>` label (safest — doesn't require Components to be pre-provisioned) |
+| Feature | Labels **and/or** Components | Standard JIRA Software has no native Feature issue type, so this rides as `feature:<name>` label (safest — doesn't require Components to be pre-provisioned) |
+| Category | Labels (`category:foundation-overhead`, etc.) unless a custom field exists | Keeps functional vs. overhead work distinguishable post-import |
 | Summary (the As-a/I-want/so-that sentence) | Description (top section) | |
 | Description | Description (body) | |
 | Acceptance Criteria | Description (dedicated "Acceptance Criteria" heading) unless the project has a real custom AC field (e.g., Xray "Acceptance Criteria", Zephyr) — ask the user | |
+| Sizing Drivers | Description (dedicated "Sizing Drivers" heading) | Not usually a dedicated JIRA field — keep it visible in Description for grooming/audit purposes |
 | Dependencies | Linked Issues (`blocked by` / `blocks`) | Standard CSV importer supports this via paired columns like `Outward Issue Link` + `Linked Issue`; requires target keys to already exist, so do dependency linking in a second pass after all stories are created |
 | Priority | Priority | Confirm the project's actual Priority scheme (Highest/High/Medium/Low/Lowest is default JIRA; MoSCoW or P1–P4 need a custom field or label instead) |
 | Story Size | Story point estimate (or the project's actual custom field name for points — commonly `customfield_10016` in Jira Cloud, but this varies per instance) | |
 | Complexity | Labels (`complexity:high`, etc.) unless a custom field exists | |
 | Design Details | Description (dedicated "Design Details" heading) or a custom field if the project has one | |
 | Actor/Persona | *(fold into Description, not usually its own field)* | |
+| Requirement Origin | Labels (`origin:sourced` / `origin:inferred`) unless a custom field exists | Keeps inferred vs. explicitly sourced requirements distinguishable post-import, not just in the workbook |
 | Source Reference | Description (dedicated "Source" heading) — keep for traceability even post-import | |
 | Assumptions | Description (dedicated "Assumptions" heading) | |
 | Out of Scope | Description (dedicated "Out of Scope" heading) | |

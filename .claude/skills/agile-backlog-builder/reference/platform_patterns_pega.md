@@ -40,6 +40,66 @@ Flag **High/Complex** when a story involves: cross-application/cross-ruleset dep
 inherited framework rules (vs. implementation-layer overrides), custom activities/Java steps instead
 of out-of-the-box constructs, or integration with legacy/non-REST systems requiring custom connectors.
 
+## Case-control constructs (map to the checklist in SKILL.md §2a)
+
+When building the Case-Type Matrix and its case-control stories, map each control to its Pega-native
+mechanism rather than a generic description — this is what keeps case-control stories from being
+silently dropped or hand-waved as "the framework handles it":
+- **Withdraw** → `Resolve-Withdrawn` (or a custom withdraw flow action); confirm whether withdrawal
+  is allowed only from specific stages
+- **Hold / Resume** → case-level Suspend/Resume (via `pyDefault` case actions or a custom
+  Hold/Resume flow action with a defined resume trigger — manual, SLA-based, or external event); a
+  story here should specify what actually triggers resume, not just "the case can be held"
+- **Skip** → conditional stage/step navigation (`Change Stage`, or a skip flow action gated by a
+  when-rule); specify the condition under which skip is allowed
+- **Return / Go-back** → prior-stage routing (custom flow action or `Change Stage` backward), usually
+  paired with a reason-code capture
+- **Reassign** → standard case assignment reassignment (worklist/workbasket move); specify whether
+  reassignment is manual (user-initiated) or rule-driven (routing/SLA-triggered)
+- **Merge** → custom logic; Pega has no fully out-of-the-box case-merge — a merge story is almost
+  always at least Medium complexity and should say so, covering what happens to each case's
+  in-flight work and history
+- **Duplicate detection** → typically a Decision Table/search-based check at case creation
+  (`Prospective Search`, a report-definition-backed lookup, or a duplicate-check data transform);
+  specify the matching criteria
+- **Dependency / relationship gating** → Case Relationships (page list of related case IDs) plus a
+  when-rule/guard gating stage entry on a related case's status; specify which relationship and
+  which status
+- **Exception processing** → generalized error handling: work queue routing on connector/activity
+  failure, `pxException` handling, or a dedicated exception case type — specify which pattern applies
+  rather than leaving "handles exceptions" generic
+
+## Correspondence and document/proposal generation is a Feature, not a story
+
+Drafting submissions, proposals, or other generated correspondence in Pega is rarely a single story —
+treat it as its own **Feature** per SKILL.md §3's "is this actually a Feature" check, decomposed at
+minimum into:
+- Template/content inventory (what documents exist, by product/segment/standard type — this feeds
+  the variant-dimension step in SKILL.md §3 step 4)
+- Content rule and template design per variant (Correspondence rules, Content rules, Paragraph rules
+  or Word/HTML templates), sized per variant rather than lumped into one story
+- Data assembly feeding the template (Data Transforms/clipboard pages sourcing case, party, and
+  product data into the document)
+- Generation trigger (flow action, activity, or batch job that produces the document)
+- Review/approval routing before send, if applicable — this overlaps with case-control stories in
+  the Case-Type Matrix, not a separate concern to invent from scratch
+- Delivery channel (email, portal, print/mail vendor integration) — an integration story in its own
+  right per the Interface Inventory, not folded into the document-generation story
+
+Sizing signal: if the source material describes multiple product lines, standard types, or review
+paths for correspondence, that is a variant-dimension trigger (SKILL.md §3 step 4), not a reason to
+write one large story and size it at the 13-point ceiling.
+
+## Integration sizing signals specific to Pega
+
+When sizing a story tied to an Interface Inventory row (SKILL.md §2b), Pega-specific drivers that
+push a story above a routine 5–8: a new Connector class/data page built from scratch (vs. reusing an
+existing integration pattern in the application), SOAP or file-based protocols requiring custom
+parsing, multi-step orchestration across more than one connector call, or reconciliation/retry logic
+beyond a simple synchronous request-response. A same-pattern reuse (new REST connector matching an
+existing wrapper class's shape) can legitimately size smaller — say so explicitly rather than
+defaulting every integration to the same size.
+
 ## Note on other platforms
 
 No pattern file yet exists for Camunda, Salesforce, or custom-code builds. When one of those is named
