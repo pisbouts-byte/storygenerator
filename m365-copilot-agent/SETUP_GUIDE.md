@@ -35,10 +35,14 @@ line) into the agent's **Instructions** field.
 ## 3. Knowledge sources
 
 Upload these three files from the `knowledge/` folder in this same directory as knowledge sources:
-- `jira_csv_mapping.md`
-- `platform_patterns_pega.md`
+- `jira_csv_mapping.txt`
+- `platform_patterns_pega.txt`
 - `backlog_template.xlsx` (lets the agent describe the expected output format/columns, even though
   it can't fill in the live workbook the way Copilot *inside* an open Excel file can)
+
+These are plain `.txt` rather than `.md` — Copilot Studio / Agent Builder's file-upload knowledge
+sources don't accept raw Markdown. `.txt` keeps the same content and indexes fine even with
+Markdown syntax (headers, tables) still visible in the text.
 
 If your tenant only allows SharePoint/OneDrive knowledge sources rather than direct file upload,
 put these three files in a shared SharePoint folder first and point the agent at that folder
