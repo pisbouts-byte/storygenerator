@@ -1,0 +1,80 @@
+Platform Patterns - Camunda (Platform 8 / Zeebe)
+
+Consult this when intake identifies the target platform as Camunda. Confirm the specific version
+(8.x - the engine is Zeebe; Camunda 7's embedded-engine model is architecturally different and
+these conventions don't transfer) and hosting (Camunda SaaS vs. self-managed on Kubernetes) -
+self-managed hosting adds real foundational scope (Helm chart deployment, cluster operations) that
+SaaS removes; don't assume one without confirming.
+
+== Foundational / enabler stories for a new build on Camunda 8 ==
+
+Don't generate feature stories before these exist (or are explicitly confirmed as already in
+place): cluster provisioning (Camunda SaaS cluster, or self-managed Kubernetes/Helm deployment of
+Zeebe, Operate, Tasklist, Identity, Connectors runtime); identity/auth setup (OIDC, Keycloak for
+self-managed, or an external IdP - confirm SSO scope); CI/CD for BPMN/DMN artifact deployment
+(zbctl, Zeebe deploy API, or Camunda's GitHub Actions), separate from application code CI/CD; job
+worker scaffolding (the base microservice pattern/SDK external workers will be built on); multi-
+tenancy configuration if applicable; monitoring/alerting integration with Operate and, if licensed,
+Optimize.
+
+== Design-detail conventions for Story rows ==
+
+- Process/flow work -> reference the process definition and specific element types (User Task,
+  Service Task, Business Rule Task, Script Task, Send/Receive Task, Timer/Message/Error/Escalation
+  events, gateway types, embedded sub-process vs. call activity, multi-instance markers) - not
+  generic "add a process step"
+- Business rules -> reference the DMN decision table (or decision requirements diagram) and its hit
+  policy
+- Integrations -> reference whether the call is a Job Worker (external task pattern - a custom
+  microservice polling Zeebe) or an out-of-box Connector, and whether it's new or reuses an existing
+  worker/connector
+- UI/human tasks -> reference Camunda Forms (form-js) for simple task UIs vs. a custom front-end
+  calling Tasklist/Zeebe REST APIs for anything beyond a basic form
+- Reporting -> reference Optimize dashboards (Enterprise feature, don't assume licensed) or custom
+  reporting off Operate/exported process data
+
+== Case-control constructs (map to the case-control checklist in discovery_and_sizing_rules.txt) ==
+
+Camunda 8 is a process orchestration engine, not a case-management platform - most of these need
+explicit modeling. Don't under-size by assuming "the engine handles it":
+- Withdraw -> Cancel Process Instance (a Zeebe command); expose safely via an interrupting boundary
+  event correlated to a "Cancel" message, not a bare ops-console cancellation
+- Hold -> no native hold button; model an explicit wait state (receive task or boundary event)
+  - specify what resumes it
+- Resume -> message correlation into the waiting receive task/boundary event
+- Skip -> a conditional gateway bypassing a task under a business condition - don't rely on
+  Operate's "Modify Instance" for a business-facing skip feature, that's an ops tool
+- Return / Go-back -> requires an explicit rework loop in the BPMN diagram; no native "go back"
+- Reassign -> Tasklist supports reassignment via its API/UI (claim/unclaim, candidate group
+  reassignment) - specify user-initiated vs. rule-driven
+- Merge -> no native process-instance merge; build via message correlation on a shared business key
+  - flag as custom, at least Medium complexity
+- Duplicate detection -> custom DMN table or service task querying for an existing instance by
+  business key
+- Dependency / relationship gating -> message correlation or call activities linking parent/child
+  instances, gating on a related instance's state
+- Exception processing -> Zeebe raises incidents automatically on job/task failures (ops-level
+  retry in Operate); business-level exception handling needs explicit BPMN error/escalation events
+
+== Document/correspondence generation is a Feature, not a story ==
+
+Camunda has no native document-generation engine - always integration work via a Service
+Task/Job Worker calling an external templating service. Treat multi-variant correspondence as its
+own Feature: template inventory by product/segment/standard type, the job worker/service
+populating templates, the BPMN trigger point(s), review/approval routing (often its own sub-process
+with a user task), and delivery-channel integration as a separate story. Multiple templates or
+review paths is a variant-dimension trigger, not a reason for one large story.
+
+== Integration sizing signals specific to Camunda ==
+
+Drivers that push a story above a routine 5-8: a new job worker built from scratch vs. reuse of an
+existing worker pattern, custom correlation logic across multiple message events, DMN with several
+linked tables or a complex hit policy, or reconciliation/retry logic beyond Zeebe's built-in job
+retry. A same-pattern reuse can size smaller - say so explicitly.
+
+== Complexity signals specific to Camunda ==
+
+Flag High/Complex for: cross-process choreography via message correlation, self-managed
+infrastructure changes (Kubernetes/Helm) rather than SaaS, DMN with many tables or a
+COLLECT/RULE-ORDER hit policy, high-volume async job handling requiring backpressure tuning, or
+custom job worker development instead of an out-of-box Connector.

@@ -34,14 +34,18 @@ line) into the agent's **Instructions** field.
 
 ## 3. Knowledge sources
 
-Upload these four files from the `knowledge/` folder in this same directory as knowledge sources:
+Upload these files from the `knowledge/` folder in this same directory as knowledge sources:
 - `discovery_and_sizing_rules.txt` (the Case-Type Matrix, Interface Inventory, case-control
   checklist, anti-templating rule, and hard split-gate sizing rules — added after a benchmark
   against manually-elaborated requirements found the generated backlog was under-sizing large
   capabilities and dropping cross-cutting case controls; see the agent's Instructions field for how
   it's referenced)
 - `jira_csv_mapping.txt`
-- `platform_patterns_pega.txt`
+- `platform_patterns_pega.txt`, `platform_patterns_camunda.txt`, `platform_patterns_appian.txt`,
+  `platform_patterns_unqork.txt`, `platform_patterns_powerapps.txt` — upload whichever ones your
+  team actually delivers on; uploading all five doesn't hurt (the agent only consults the one
+  matching the platform the user names), but if your knowledge-source count is capped, prioritize
+  the platforms you actually use
 - `backlog_template.xlsx` (lets the agent describe the expected output format/columns, even though
   it can't fill in the live workbook the way Copilot *inside* an open Excel file can)
 
@@ -50,8 +54,7 @@ sources don't accept raw Markdown. `.txt` keeps the same content and indexes fin
 Markdown syntax (headers, tables) still visible in the text.
 
 If your tenant only allows SharePoint/OneDrive knowledge sources rather than direct file upload,
-put these four files in a shared SharePoint folder first and point the agent at that folder
-instead.
+put these files in a shared SharePoint folder first and point the agent at that folder instead.
 
 ## 4. Conversation starters
 

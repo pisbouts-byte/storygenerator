@@ -32,10 +32,13 @@ content. If the user has already answered one in the conversation, don't re-ask 
 **Always required:**
 1. **Development platform, version, and hosting mechanism.** E.g., "Pega Constellation/Infinity 24.1,
    on-prem" vs "Camunda 8.9, cloud (SaaS)" vs "custom Java/Spring, AWS." This determines which
-   platform pattern file to load (see [reference/platform_patterns_pega.md](reference/platform_patterns_pega.md)
-   for the first supported platform) and what "design details" look like for each story. If no
-   pattern file exists yet for the named platform, say so explicitly and draft design details from
-   general SDLC/architecture best practice instead of inventing platform-specific claims.
+   platform pattern file to load and what "design details" look like for each story. Pattern files
+   currently exist for [Pega](reference/platform_patterns_pega.md),
+   [Camunda](reference/platform_patterns_camunda.md), [Appian](reference/platform_patterns_appian.md),
+   [Unqork](reference/platform_patterns_unqork.md), and
+   [Microsoft Power Apps](reference/platform_patterns_powerapps.md). If no pattern file exists yet
+   for the named platform, say so explicitly and draft design details from general SDLC/architecture
+   best practice instead of inventing platform-specific claims.
 2. **New build or enhancement to an existing application?** New builds imply a set of foundational
    /enabler stories (see §7) that enhancements typically don't need — don't generate foundational
    setup stories for an enhancement unless the user says the foundation doesn't already exist.

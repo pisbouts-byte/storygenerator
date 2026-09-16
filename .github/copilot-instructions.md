@@ -265,6 +265,208 @@ logic push a story above a routine 5–8. A same-pattern reuse can size smaller 
 to inherited framework rules (vs. implementation-layer overrides), custom activities/Java steps
 instead of out-of-the-box constructs, or integration with legacy/non-REST systems.
 
-No pattern library yet exists here for Camunda, Salesforce, or custom-code builds — for those, use
+### Platform patterns — Camunda (Platform 8 / Zeebe)
+
+Use when the target platform is Camunda. Confirm it's 8.x (Zeebe engine — Camunda 7's embedded
+engine is architecturally different, these conventions don't transfer) and hosting (SaaS vs.
+self-managed Kubernetes, which adds real foundational scope).
+
+**Foundational/enabler stories for a new build:** cluster provisioning (SaaS cluster or self-managed
+Kubernetes/Helm deployment of Zeebe, Operate, Tasklist, Identity, Connectors), identity/auth (OIDC,
+Keycloak for self-managed), CI/CD for BPMN/DMN deployment separate from app code CI/CD, job worker
+scaffolding, multi-tenancy config if applicable, Operate/Optimize monitoring integration.
+
+**Design Details conventions:**
+- Process/flow work → reference the process definition and specific element types (User Task,
+  Service Task, Business Rule Task, gateway types, boundary events, call activity vs. embedded
+  sub-process) — not generic "add a process step"
+- Business rules → reference the **DMN decision table**/decision requirements diagram and hit policy
+- Integrations → reference whether it's a **Job Worker** (external task pattern) or an out-of-box
+  **Connector**, and whether new or reused
+- UI/human tasks → reference **Camunda Forms** (form-js) vs. a custom front-end on the Tasklist/Zeebe
+  REST APIs — state which
+- Reporting → reference **Optimize** (Enterprise, don't assume licensed) or custom reporting off
+  Operate
+
+**Case-control constructs** (Camunda is an orchestration engine, not case management — most of these
+need explicit modeling, don't assume "the engine handles it"): Withdraw → Cancel Process Instance
+via an interrupting boundary event correlated to a message, not a bare ops-console cancellation;
+Hold → an explicit modeled wait state (receive task/boundary event), no native hold button; Resume →
+message correlation into that wait state; Skip → a conditional gateway fed by a process variable —
+don't rely on Operate's "Modify Instance," that's an ops tool; Return/Go-back → an explicit rework
+loop in the BPMN diagram, no native "go back"; Reassign → Tasklist claim/unclaim or candidate group
+reassignment; Merge → no native support, build via message correlation on a shared business key,
+flag at least Medium complexity; Duplicate detection → custom DMN/service-task check by business
+key; Dependency/relationship gating → message correlation or call activities gating on a related
+instance's state; Exception processing → Zeebe raises incidents automatically on job failures
+(ops-level retry in Operate); business-facing exception handling needs explicit BPMN error/
+escalation events.
+
+**Correspondence generation is a Feature, not a story** — Camunda has no native document engine, so
+this is always a Service Task/Job Worker calling an external templating service. Decompose into
+template inventory per variant, the job worker populating templates, the BPMN trigger,
+review/approval routing (often its own sub-process), and delivery-channel integration as a separate
+story.
+
+**Integration sizing signals:** a new job worker built from scratch, custom correlation logic across
+multiple message events, DMN with several linked tables or a complex hit policy, or
+reconciliation/retry beyond Zeebe's built-in job retry push above a routine 5–8.
+
+**Complexity signals:** cross-process choreography via message correlation, self-managed
+infrastructure changes rather than SaaS, complex DMN hit policies, high-volume async job handling
+needing backpressure tuning, custom job worker development instead of an out-of-box Connector.
+
+### Platform patterns — Appian
+
+Use when the target platform is Appian. Confirm the version (frequent cloud releases change Records/
+Sites/process-model behavior) and hosting (Appian Cloud is the norm; on-prem is uncommon — confirm).
+
+**Foundational/enabler stories for a new build:** application object structure, base Record Type
+design (external data store vs. native Appian store vs. process-backed), security Groups/role map,
+Connected System(s) and credential/environment-variable setup, environment/ALM pipeline for
+DEV/TEST/PROD promotion, base Site structure if new end-user-facing.
+
+**Design Details conventions:**
+- UI work → reference the **Interface** (SAIL), what Record/Related Action it's bound to, and
+  whether it's a Site page or process Task form
+- Process/flow work → reference **Process Model** nodes and whether logic belongs in a node, an
+  **Expression Rule**, or an **Integration** object
+- Business rules → reference **Decision** objects or Expression Rules
+- Integrations → reference the **Connected System**/Integration object, new or reused
+- Reporting → reference **Reports**/dashboards built on Record Types
+
+**Case-control constructs** (Appian's Record + Process Model combo gives more native support than a
+pure BPM engine, but still needs explicit modeling): Withdraw → a Related Action triggering an
+explicit cancel/exit path; Hold → a wait node or a status field gating other Related Actions, with
+an explicit resume trigger; Resume → the paused node's triggering event or status clearing; Skip →
+a conditional gateway or a Related Action bypassing steps under a business rule; Return/Go-back →
+an explicit rework loop node with a reason/comment capture; Reassign → built-in Task list Reassign
+action or the Reassign Task smart service, manual or rule-driven; Merge → no native support, build
+via a rule linking two Records, at least Medium complexity; Duplicate detection → an Expression Rule
+or Record query at intake; Dependency/relationship gating → Related Records plus a rule/gateway
+condition on a related Record's status; Exception processing → process model error nodes/subprocess
+handling, or Process Admin Console for ops-level retry.
+
+**Document generation is a Feature, not a story** — Appian's **Generate Document** smart service
+makes this common but still multi-part: template inventory per variant, template design per
+variant, data-mapping/merge-field assembly, the triggering process node, review/approval routing
+(overlaps with case-control stories), and delivery channel as its own integration story.
+
+**Integration sizing signals:** a new Connected System from scratch, SOAP/on-premises systems
+requiring Appian's on-prem connectivity rather than direct Cloud-to-Cloud REST, multi-step
+orchestration across Integration objects, or custom error-handling/retry push above a routine 5–8.
+
+**Complexity signals:** custom plugins/Java components (rare but a strong signal), heavy
+conditional/dynamic SAIL interfaces, cross-application Record relationships, legacy/on-premises
+integration requiring a gateway.
+
+### Platform patterns — Unqork
+
+Use when the target platform is Unqork. Confirm the version/release train and which core components
+are actually in use. **Important:** Unqork has no native business-process/case-management engine, no
+native work-queue/task-assignment engine, and no native wizard back-stack — every case-control and
+orchestration capability is manually built from Modules, Data Tables, and Workflow components.
+Don't size Unqork case-control stories by analogy to Pega/Appian/Camunda — they're almost always
+more custom, and therefore larger, on this platform.
+
+**Foundational/enabler stories for a new build:** environment/tenant setup + Deployment Manager
+pipeline, base Data Table schema for core entities, authentication/SSO + entitlement config, core
+Reference Data Tables, base module template/theming, plugin/integration framework setup (decide
+early whether marketplace plugins cover the need or custom plugin development is required).
+
+**Design Details conventions:**
+- UI work → reference the specific **Components** used and which **Module** they live in
+- Process/flow work → reference the **Workflow** component's logic nodes and the specific
+  module-to-module navigation/routing logic, naming modules and transition conditions
+- Business rules → reference Workflow conditional logic or a Reference Data Table-driven lookup
+- Integrations → reference the specific **Plugin** or RESTv2/Integration component, new or reused
+- Reporting → limited native reporting vs. Pega/Appian — reference Unqork's own export capability or
+  a downstream BI tool; don't assume rich native reporting
+
+**Case-control constructs** (all custom-built — call this out explicitly rather than implying
+platform support): Withdraw → a status field update gated by conditional logic; Hold → a status flag
+plus conditional logic blocking navigation, often with a dedicated Hold Reason table; Resume → a
+status transition triggered by user action or scheduled job; Skip → custom Workflow/navigation logic
+evaluating a data condition; Return/Go-back → custom navigation logic — no built-in wizard
+back-stack, so journey-state tracking is often its own sub-scope; Reassign → an owner/assigned-to
+field plus a module or admin screen — no built-in work-queue engine, so this is commonly
+under-scoped, size it accordingly; Merge → fully custom, no native support, at least Medium-High
+complexity; Duplicate detection → a plugin call or Data Table query at intake; Dependency/
+relationship gating → a relationship field plus conditional logic on a related record's status;
+Exception processing → error-branch handling within Workflow components, or a dedicated
+error-logging table plus admin remediation module.
+
+**Document generation is a Feature, not a story** — built via a document-generation plugin or
+external document service call. Decompose into template inventory per variant, the plugin call
+populating each variant, the module/Workflow trigger, review/approval routing (overlaps with
+case-control stories), and delivery channel as its own integration story.
+
+**Integration sizing signals:** custom plugin development from scratch (no marketplace plugin
+covers it), multi-step orchestration across several plugins/RESTv2 calls, or hand-built
+retry/resilience logic (no native support) push above a routine 5–8.
+
+**Complexity signals:** flag High/Complex by default for any case-control or workflow-orchestration
+capability (these skew higher than case-management-native platforms), heavy custom JavaScript in
+scripting components, multi-module journeys with complex branching, and any custom-built (vs.
+marketplace) plugin.
+
+### Platform patterns — Microsoft Power Apps (Power Platform)
+
+Use when the target platform is Power Apps. Confirm the app model — **Canvas App** (Power Fx
+formula-driven) vs. **Model-Driven App** (Dataverse, form/view/BPF-driven) — these are
+architecturally different and Design Details should always say which. Also confirm whether this
+sits on a Dynamics 365 base (e.g., Customer Service's Case table) or a fully custom Dataverse
+schema.
+
+**Foundational/enabler stories for a new build:** environment strategy (Dev/Test/Prod, Sandbox) with
+Dataverse database allocation, Dataverse table/schema design (extends Dynamics 365 base vs. fully
+custom), security role/Business Unit/Team design, solution architecture (managed solution + ALM
+pipeline via Power Platform Pipelines or Azure DevOps, environment variables/connection references),
+connector/custom connector setup, base Business Process Flow for the primary case/record type if
+case-management-shaped.
+
+**Design Details conventions:**
+- UI work → Canvas App: the screen and Power Fx formulas/controls; Model-Driven App: the Form, View,
+  or BPF stage — always state which app model
+- Process/flow work → reference **Business Process Flow** stages or **Power Automate** cloud flow
+  triggers/actions, naming the Dataverse table(s)
+- Business rules → **Dataverse Business Rules** for simple field-level logic vs. a flow
+  condition/**Dataverse plugin** for anything more complex — state which tier, a plugin is
+  materially larger than a Business Rule
+- Integrations → reference the **Connector** (standard/premium/custom via OpenAPI), new or reused
+- Reporting → reference **Power BI** dashboards or native Model-Driven App views/charts
+
+**Case-control constructs** (Dataverse/BPF give genuinely native support for several of these — say
+so when it applies, it should size smaller than a custom build): Withdraw → native Status/Status
+Reason field transition via a command-bar button or bound flow — a strong out-of-box fit; Hold → a
+custom "On Hold" Status Reason plus a Business Rule/flow blocking progression, also a good native
+fit; Resume → a flow/user action clearing the Hold status reason; Skip → BPFs support native
+branching logic in current Dataverse versions — confirm before assuming custom build is needed;
+Return/Go-back → BPFs natively support returning to a previous stage; Canvas Apps need custom
+screen-navigation logic instead; Reassign → native Dataverse ownership reassignment (Assign action)
+or queue-based assignment, another strong native fit; Merge → native Merge exists for certain base
+tables (Account/Contact) but custom tables need a custom flow/plugin — check table type; Duplicate
+detection → native Duplicate Detection Rules, a strong out-of-box fit, size smaller when used;
+Dependency/relationship gating → table relationships plus a Business Rule/flow condition; Exception
+processing → Power Automate error handling (`Configure Run After`, Scope/Catch) or Dataverse plugin
+exceptions, surfaced in flow run history for ops-level retry.
+
+**Document generation is a Feature, not a story** — Power Platform has native paths (Dataverse Word
+Templates, or a flow's "Populate a Microsoft Word template" action) that can make this smaller than
+platforms with no native generation, but it's still rarely one story with multiple variants.
+Decompose into template inventory per variant, template design per variant, the trigger,
+review/approval routing (a BPF stage or Power Automate approval, overlaps with case-control
+stories), and delivery channel as its own integration story if beyond a simple email action.
+
+**Integration sizing signals:** a new custom connector built from an OpenAPI spec vs. a
+standard/premium prebuilt connector, a multi-step flow with explicit error handling vs. a simple
+trigger-action flow, or Dataverse plugin (C#) development — a stronger signal than a declarative
+Business Rule/flow — push above a routine 5–8.
+
+**Complexity signals:** custom Dataverse plugins (C#) instead of declarative Business Rules/flows,
+PCF custom component development, on-premises integration requiring the On-Premises Data Gateway,
+solution-layering/ALM complexity across environments, heavy Power Fx formula complexity.
+
+No pattern library yet exists here for Salesforce or other custom-code builds — for those, use
 general SDLC/architecture best practice for Design Details and say so explicitly rather than
 inventing platform-specific claims.

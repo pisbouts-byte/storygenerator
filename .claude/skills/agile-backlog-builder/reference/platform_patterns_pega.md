@@ -102,8 +102,9 @@ defaulting every integration to the same size.
 
 ## Note on other platforms
 
-No pattern file yet exists for Camunda, Salesforce, or custom-code builds. When one of those is named
-as the target platform, say so explicitly and fall back to general SDLC/architecture best practice for
-Design Details rather than inventing Pega-specific claims for a non-Pega platform. Add a new
-`platform_patterns_<name>.md` file here (same structure as this one) the first time the team runs this
-skill against a new platform, so it accumulates over time.
+Pattern files also exist for [Camunda](platform_patterns_camunda.md), [Appian](platform_patterns_appian.md),
+[Unqork](platform_patterns_unqork.md), and [Microsoft Power Apps](platform_patterns_powerapps.md).
+For anything else (Salesforce, custom-code builds, etc.), say so explicitly and fall back to general
+SDLC/architecture best practice for Design Details rather than inventing platform-specific claims.
+Add a new `platform_patterns_<name>.md` file here (same structure as this one) the first time the
+team runs this skill against a new platform, so it accumulates over time.

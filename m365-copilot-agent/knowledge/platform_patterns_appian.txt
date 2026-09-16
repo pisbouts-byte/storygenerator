@@ -1,0 +1,79 @@
+Platform Patterns - Appian
+
+Consult this when intake identifies the target platform as Appian. Confirm the specific version
+(Appian ships frequent cloud releases; Records/Sites/process-model behavior evolves release over
+release) and hosting (Appian Cloud is the norm; on-premises Appian exists but is uncommon - confirm
+rather than assume Cloud).
+
+== Foundational / enabler stories for a new build on Appian ==
+
+Don't generate feature stories before these exist (or are explicitly confirmed as already in
+place): application object structure (the Appian Application grouping objects - process models,
+interfaces, Record Types, rules, integrations); base Record Type design for core entities,
+including whether Records sync from an external data store, a native Appian data store, or are
+process-backed; security Groups/role map design; Connected System(s) and credential/environment-
+variable setup for external integrations; environment/ALM pipeline for application packaging and
+promotion across DEV/TEST/PROD; base Site structure if this is a new end-user-facing app shell.
+
+== Design-detail conventions for Story rows ==
+
+- UI work -> reference the Interface (SAIL) involved, what Record or Related Action it's bound to,
+  and whether it's embedded in a Site page or a process Task form
+- Process/flow work -> reference Process Model nodes (User Input Task, Script Task, Subprocess,
+  Gateway) and whether logic belongs in a process node, an Expression Rule, or an Integration object
+- Business rules -> reference Decision objects or Expression Rules, not generic "business logic" -
+  Decisions are the closer analog to a decision table for tabular logic
+- Integrations -> reference the Connected System and Integration object used, and whether a new
+  Connected System needs configuring or an existing one is reused
+- Reporting -> reference Reports/dashboards built on Record Types, or summary Interfaces
+
+== Case-control constructs (map to the case-control checklist in discovery_and_sizing_rules.txt) ==
+
+Appian's Record + Process Model combination gives more native support than a pure BPM engine, but
+several still need explicit modeling:
+- Withdraw -> a Related Action on the Record triggering an explicit cancel/exit path in the process
+  model - specify which stages allow it
+- Hold -> a wait node in the process model, or a status field on the Record gating other Related
+  Actions until cleared - specify the resume trigger explicitly
+- Resume -> the paused node's triggering event (Related Action, Process Message, or API call), or
+  the status field clearing
+- Skip -> a conditional gateway, or a Related Action advancing Record status bypassing standard
+  steps, gated by role/business rule
+- Return / Go-back -> an explicit rework loop node routing to a prior user input task, usually
+  paired with a reason/comment field
+- Reassign -> Appian tasks support built-in reassignment (Task list Reassign action, or the
+  Reassign Task smart service), plus group-based queue routing - specify manual vs. rule-driven
+- Merge -> no native Record/case merge; build via a rule linking two Records and
+  archiving/redirecting one - flag as at least Medium complexity
+- Duplicate detection -> an Expression Rule or Record query checked at intake before creating a new
+  Record/process instance
+- Dependency / relationship gating -> Related Records plus a rule or gateway condition checking a
+  related Record's status before proceeding
+- Exception processing -> process model error nodes / subprocess exception handling, or node
+  failures surfaced in the Process Admin Console for ops-level retry - specify business-facing vs.
+  ops-only
+
+== Document/correspondence generation is a Feature, not a story ==
+
+Appian's built-in Generate Document smart service (Word/PDF from a template) makes document
+generation common but still multi-part. Treat it as its own Feature: template inventory by
+product/segment/standard type, the document template design per variant, the data-mapping/merge-
+field assembly, the process node triggering generation, review/approval routing (overlapping with
+case-control stories, not invented separately), and the delivery channel as its own integration
+story. Multiple product lines or review paths is a variant-dimension trigger, not a reason to size
+one large story at the 13-point ceiling.
+
+== Integration sizing signals specific to Appian ==
+
+Drivers that push a story above a routine 5-8: a new Connected System built from scratch, SOAP
+integrations or on-premises systems requiring Appian's on-prem connectivity (site-to-site VPN or a
+data gateway) rather than direct Cloud-to-Cloud REST, multi-step orchestration across several
+Integration objects within one process node, or custom error-handling/retry logic beyond a simple
+synchronous call. A same-pattern reuse of an existing Connected System can size smaller.
+
+== Complexity signals specific to Appian ==
+
+Flag High/Complex for: custom plugins or Java components (rare but a strong signal when present),
+SAIL interfaces with heavy conditional/dynamic component logic, cross-application Record
+relationships spanning multiple Appian applications, or integration with legacy/on-premises systems
+requiring a gateway rather than direct connectivity.

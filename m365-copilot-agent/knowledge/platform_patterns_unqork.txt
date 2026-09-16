@@ -1,0 +1,88 @@
+Platform Patterns - Unqork
+
+Consult this when intake identifies the target platform as Unqork. Confirm the specific
+version/release train and which core components are actually in use (Deployment Manager,
+Orchestrate/scheduled jobs, specific plugin set) - Unqork is a no-code canvas platform with a
+smaller, more implementation-specific standard toolkit than Pega/Appian/Camunda, so more here
+genuinely varies by how a given team has built things. Flag assumptions explicitly when the source
+material doesn't confirm a pattern.
+
+IMPORTANT FRAMING: Unqork has no native business-process/case-management engine, no native
+task/work-queue assignment engine, and no native multi-stage wizard/back-stack state management.
+Every one of those is manually built from Modules, Data Tables, and Workflow components.
+Case-control and orchestration stories on Unqork are almost always more custom - and therefore
+larger and more complex - than the equivalent capability on Pega, Appian, or Camunda. Don't size
+Unqork case-control stories by analogy to those platforms.
+
+== Foundational / enabler stories for a new build on Unqork ==
+
+Don't generate feature stories before these exist (or are explicitly confirmed as already in
+place): environment/tenant setup across Dev/QA/UAT/Prod and Deployment Manager pipeline
+configuration; base Data Table schema/data model design for core entities (the record store
+underlying the application); authentication/SSO setup and entitlement/permission configuration;
+core Reference Data Tables (RDTs) for lookups; base module template/theming setup; plugin/
+integration framework setup for external systems - decide early whether marketplace plugins cover
+them or custom plugin development is needed.
+
+== Design-detail conventions for Story rows ==
+
+- UI work -> reference the specific Components used (Input, Data Table, Panel, etc.) and which
+  Module they live in
+- Process/flow work -> reference the Workflow component's logic nodes and the specific
+  module-to-module navigation/routing logic - name the modules and transition conditions, since
+  this is hand-built rather than a platform-native process engine
+- Business rules -> reference Workflow conditional logic or a Reference Data Table-driven lookup,
+  not generic "validate the field"
+- Integrations -> reference the specific Plugin (marketplace or custom-built) or the
+  RESTv2/Integration component, and whether it's new or reuses an existing one
+- Reporting -> Unqork's native reporting is limited compared to Pega/Appian - reference whichever
+  applies: Unqork's own export capability, or a downstream BI tool fed by Data Table exports; don't
+  assume rich native reporting without confirming
+
+== Case-control constructs (map to the case-control checklist in discovery_and_sizing_rules.txt) ==
+
+All of these are custom-built on Unqork - call this out explicitly rather than implying platform
+support:
+- Withdraw -> a status field update on the Data Table record, driven by a user action, gated by
+  conditional logic restricting which statuses allow it
+- Hold -> a status flag plus conditional logic blocking further module navigation until cleared;
+  commonly paired with a dedicated Hold Reason Data Table
+- Resume -> a status transition clearing the hold flag, triggered by a user action or scheduled job
+- Skip -> custom Workflow/navigation logic evaluating a data condition to bypass a module
+- Return / Go-back -> custom navigation logic routing to a prior module; Unqork has no built-in
+  wizard back-stack, so journey-state tracking is often its own sub-scope worth calling out
+- Reassign -> an owner/assigned-to field plus a module or admin screen for reassignment - Unqork has
+  no built-in work-queue/task-assignment engine, so this is one of the most commonly under-scoped
+  areas on this platform; size it accordingly, not as a small config change
+- Merge -> fully custom logic combining two Data Table records; no native support - at least
+  Medium-High complexity as a starting assumption
+- Duplicate detection -> a plugin call or Data Table query checking for an existing matching record
+  at intake
+- Dependency / relationship gating -> a relationship field between Data Table records plus
+  conditional logic checking a related record's status
+- Exception processing -> error-branch handling within Workflow components for plugin/integration
+  failures, or a dedicated error-logging Data Table plus an admin remediation module
+
+== Document/correspondence generation is a Feature, not a story ==
+
+Unqork implementations (frequently insurance/govtech) commonly need generated correspondence, built
+via a document-generation plugin or external document service call. Treat this as its own Feature:
+template inventory by product/segment/standard type, the plugin/integration call populating each
+variant, the module/Workflow trigger point, review/approval routing (overlapping with case-control
+stories, not invented separately), and the delivery channel as its own integration story. Multiple
+templates or review paths is a variant-dimension trigger, not a reason for one large story.
+
+== Integration sizing signals specific to Unqork ==
+
+Drivers that push a story above a routine 5-8: custom plugin development from scratch (no
+marketplace plugin covers the need) vs. reuse of an existing plugin, multi-step orchestration
+across several plugins/RESTv2 calls within one Workflow, or the lack of native retry/error-handling
+requiring hand-built resilience logic. A same-pattern reuse of an already-built plugin can size
+smaller.
+
+== Complexity signals specific to Unqork ==
+
+Flag High/Complex by default for: any case-control or workflow-orchestration capability (these skew
+higher than equivalent work on case-management-native platforms), heavy custom JavaScript within
+scripting-capable components, multi-module journeys with complex branching logic, and any
+capability relying on a custom-built plugin rather than a marketplace one.
